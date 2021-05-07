@@ -19,13 +19,13 @@ public class DownloaderThread extends RecursiveTask<String> {
 
     private long endPos;
 
-    private RandomAccessFile oSavedFile;
+    private RandomAccessFile accessFile;
 
 
-    public DownloaderThread(long startPos, long endPos, RandomAccessFile oSavedFile) {
+    public DownloaderThread(long startPos, long endPos, RandomAccessFile accessFile) {
         this.startPos = startPos;
         this.endPos = endPos;
-        this.oSavedFile = oSavedFile;
+        this.accessFile = accessFile;
     }
 
     @Override
@@ -48,14 +48,16 @@ public class DownloaderThread extends RecursiveTask<String> {
             }
             try (InputStream input = httpUrlConnection.getInputStream();
                  BufferedInputStream bis = new BufferedInputStream(input);
-                 RandomAccessFile oSavedFile = new RandomAccessFile(httpFileName, "rw")) {
-                oSavedFile.seek(localFileContentLength);
+                 RandomAccessFile accessFile = new RandomAccessFile(httpFileName, "rw")) {
+                accessFile.seek(localFileContentLength);
+
+
                 byte[] buffer = new byte[Constant.BYTE_SIZE];
                 int len = -1;
                 // 读到文件末尾则返回-1
                 while ((len = bis.read(buffer)) != -1) {
                     DownloadInfoThread.downSize.add(len);
-                    oSavedFile.write(buffer, 0, len);
+                    accessFile.write(buffer, 0, len);
                 }
                 return httpFileName;
             } catch (FileNotFoundException e) {
@@ -69,8 +71,8 @@ public class DownloaderThread extends RecursiveTask<String> {
             }
         } else {
             long middle = (startPos + endPos) / 2;
-            DownloaderThread leftTask = new DownloaderThread(startPos, middle, oSavedFile);
-            DownloaderThread rightTask = new DownloaderThread(middle + 1, endPos, oSavedFile);
+            DownloaderThread leftTask = new DownloaderThread(startPos, middle, accessFile);
+            DownloaderThread rightTask = new DownloaderThread(middle + 1, endPos, accessFile);
 
             //执行任务
             invokeAll(leftTask, rightTask);
@@ -95,7 +97,7 @@ public class DownloaderThread extends RecursiveTask<String> {
         long index = Long.parseLong(temps[1]);
         synchronized (DownloaderThread.class) {
             try {
-                oSavedFile.seek(index);
+                accessFile.seek(index);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -103,7 +105,7 @@ public class DownloaderThread extends RecursiveTask<String> {
             try (BufferedInputStream bis = new BufferedInputStream(
                     new FileInputStream(fileName))) {
                 while ((len = bis.read(buffer)) != -1) { // 读到文件末尾则返回-1
-                    oSavedFile.write(buffer, 0, len);
+                    accessFile.write(buffer, 0, len);
                 }
 
             } catch (Exception e) {

@@ -8,6 +8,8 @@ import com.monkey1024.util.LogUtil;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
+import java.time.Duration;
+import java.time.LocalTime;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,6 +33,7 @@ public class Downloader {
     public static long size;
 
     public void download() {
+        LocalTime begin = LocalTime.now();
 
         //获取文件名
         httpFileName = HttpUtil.getHttpFileName(url);
@@ -39,7 +42,7 @@ public class Downloader {
 
         HttpURLConnection httpUrlConnection = null;
         DownloadInfoThread downloadInfoThread = null;
-        try (RandomAccessFile oSavedFile = new RandomAccessFile(httpFileName, "rw")) {
+        try (RandomAccessFile accessFile = new RandomAccessFile(httpFileName, "rw")) {
             httpUrlConnection = HttpUtil.getHttpURLConnection(url);
             //获取本地文件大小
             long localFileLength = FileUtil.getFileContentLength(httpFileName);
@@ -60,12 +63,15 @@ public class Downloader {
             size = contentLength / Constant.THREAD_NUM;
 
 
-            DownloaderThread downloaderThread = new DownloaderThread(0, contentLength, oSavedFile);
+            DownloaderThread downloaderThread = new DownloaderThread(0, contentLength, accessFile);
             forkJoinPool.invoke(downloaderThread);
 
             System.out.print("\r");
             System.out.print("已下载完成");
 
+            LocalTime end = LocalTime.now();
+            Duration between = Duration.between(begin, end);
+            System.out.println(between.getSeconds());
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
