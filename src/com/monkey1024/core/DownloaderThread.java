@@ -7,6 +7,9 @@ import com.monkey1024.util.LogUtil;
 
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.concurrent.RecursiveTask;
 
 /*
@@ -46,19 +49,26 @@ public class DownloaderThread extends RecursiveTask<String> {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
             try (InputStream input = httpUrlConnection.getInputStream();
                  BufferedInputStream bis = new BufferedInputStream(input);
-                 RandomAccessFile accessFile = new RandomAccessFile(httpFileName, "rw")) {
+                 RandomAccessFile accessFile = new RandomAccessFile(httpFileName, "rw");
+                 FileChannel channel = accessFile.getChannel()) {
                 accessFile.seek(localFileContentLength);
 
+                ByteBuffer byteBuffer = ByteBuffer.allocate(Constant.BYTE_SIZE);
 
                 byte[] buffer = new byte[Constant.BYTE_SIZE];
                 int len = -1;
                 // 读到文件末尾则返回-1
                 while ((len = bis.read(buffer)) != -1) {
                     DownloadInfoThread.downSize.add(len);
-                    accessFile.write(buffer, 0, len);
+                    byteBuffer.put(buffer, 0, len);
+                    byteBuffer.flip();
+                    channel.write(byteBuffer);
+                    byteBuffer.clear();
                 }
+
                 return httpFileName;
             } catch (FileNotFoundException e) {
                 LogUtil.error("ERROR! 要下载的文件路径不存在 {} ", Downloader.url);
