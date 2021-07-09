@@ -1,1 +1,7 @@
-基于多线程的下载器
+基于多线程的下载器,使用了下面技术点
+RandomAccessFile类的运用
+HttpURLConnection类的运用
+线程池的使用
+原子类LongAdder的运用
+CountDownLatch类的运用
+ScheduledExecutorService类的运用
